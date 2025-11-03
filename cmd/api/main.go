@@ -53,10 +53,10 @@ type configuration struct {
 type application struct {
 	config            configuration
 	logger            *slog.Logger
-	quoteModel        data.QuoteModel
+	// quoteModel        data.QuoteModel
 	userModel         data.UserModel
-	studysessionModel data.StudySessionModel
-	goalModel         data.GoalModel
+	// studysessionModel data.StudySessionModel
+	// goalModel         data.GoalModel
 	mailer            mailer.Mailer
 	wg                sync.WaitGroup
 	tokenModel        data.TokenModel
@@ -182,12 +182,12 @@ func main() {
 	app := &application{
 		config:     cfg,
 		logger:     logger,
-		quoteModel: data.QuoteModel{DB: db},
+		// quoteModel: data.QuoteModel{DB: db},
 		userModel:  data.UserModel{DB: db},
 		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port,
 			cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
-		studysessionModel: data.StudySessionModel{DB: db},
-		goalModel:         data.GoalModel{DB: db},
+		// studysessionModel: data.StudySessionModel{DB: db},
+		// goalModel:         data.GoalModel{DB: db},
 		tokenModel:        data.TokenModel{DB: db},
 		permissionModel:   data.PermissionModel{DB: db},
 	}

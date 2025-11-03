@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/kelseyaban/National-Inservice-Training-Database/internal/data"
-	"github.com/kelseyaban/National-Inservice-Training-Database/internal/validator"
+	"github.com/aiycoleman/Study-Mate/internal/data"
+	"github.com/aiycoleman/Study-Mate/internal/validator"
 	"golang.org/x/time/rate"
 )
 
