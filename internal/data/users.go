@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/aiycoleman/Study-Mate/internal/validator"
@@ -159,10 +160,7 @@ func (u UserModel) GetByEmail(email string) (*User, error) {
 	return &user, nil
 }
 
-// Update a User. If the version number is different
-// than what is was before the ran the query, it means
-// someone did a previous edit or is doing an edit, so
-// our query will fail and we would need to try again a bit later
+// Update a User
 func (u UserModel) Update(user *User) error {
 	query := `
         UPDATE users 
@@ -243,9 +241,179 @@ func (u UserModel) GetForToken(tokenScope, tokenPlaintext string) (*User, error)
 	return &user, nil
 }
 
-// Let's check if the current user is anonymous
-// Note: Go will compare the addresses to determine if they are same,
-// not if they have the same field values
 func (u *User) IsAnonymous() bool {
 	return u == AnonymousUser
+}
+
+// Activatng the user
+func (u UserModel) Activate(user *User) error {
+	query := `
+        UPDATE users
+        SET activated = true, version = version + 1
+        WHERE id = $1 AND version = $2
+        RETURNING version
+    `
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	return u.DB.QueryRowContext(ctx, query, user.ID, user.Version).Scan(&user.Version)
+}
+
+// GetAll retrieves all users (with optional username search and pagination).
+func (u UserModel) GetAll(id int64, username, email string, filters Filters) ([]*User, Metadata, error) {
+	query := fmt.Sprintf(`
+        SELECT COUNT(*) OVER(), id, username, email, activated, version, created_at
+        FROM users
+        WHERE (to_tsvector('simple', username) @@ plainto_tsquery('simple', $1) OR $1 = '')
+        ORDER BY %s %s, id ASC
+        LIMIT $2 OFFSET $3`,
+		filters.sortColumn(), filters.sortDirection())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	rows, err := u.DB.QueryContext(ctx, query, username, filters.PageSize, (filters.Page-1)*filters.PageSize)
+	if err != nil {
+		return nil, Metadata{}, err
+	}
+	defer rows.Close()
+
+	totalRecords := 0
+	users := []*User{}
+
+	for rows.Next() {
+		var user User
+		err := rows.Scan(
+			&totalRecords,
+			&user.ID,
+			&user.Username,
+			&user.Email,
+			&user.Activated,
+			&user.Version,
+			&user.CreatedAt,
+		)
+		if err != nil {
+			return nil, Metadata{}, err
+		}
+		users = append(users, &user)
+	}
+
+	if err = rows.Err(); err != nil {
+		return nil, Metadata{}, err
+	}
+
+	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+	return users, metadata, nil
+}
+
+// GetByID fetches a single user by ID.
+func (u UserModel) GetByID(id int64) (*User, error) {
+	if id < 1 {
+		return nil, ErrRecordNotFound
+	}
+
+	query := `
+		SELECT id, username, email, password_hash, activated, version, created_at
+		FROM users
+		WHERE id = $1
+	`
+
+	var user User
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	err := u.DB.QueryRowContext(ctx, query, id).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.Password.hash,
+		&user.Activated,
+		&user.Version,
+		&user.CreatedAt,
+	)
+
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, ErrRecordNotFound
+		default:
+			return nil, err
+		}
+	}
+
+	return &user, nil
+}
+
+// UpdateUser updates username, email, and activation status.
+func (u UserModel) UpdateUser(user *User) error {
+	query := `
+		UPDATE users
+		SET username = $1, email = $2, activated = $3, version = version + 1
+		WHERE id = $4 AND version = $5
+		RETURNING version
+	`
+
+	args := []any{
+		user.Username,
+		user.Email,
+		user.Activated,
+		user.ID,
+		user.Version,
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	return u.DB.QueryRowContext(ctx, query, args...).Scan(&user.Username, user.Email, user.Activated, user.ID, user.Version)
+}
+
+// Delete removes a user by ID.
+func (u UserModel) Delete(id int64) error {
+	if id < 1 {
+		return ErrRecordNotFound
+	}
+
+	query := `DELETE FROM users WHERE id = $1`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	result, err := u.DB.ExecContext(ctx, query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return ErrRecordNotFound
+	}
+
+	return nil
+}
+
+// UpdatePassword changes a user’s password and increments version.
+func (u UserModel) UpdatePassword(id int64, newPassword string) error {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(newPassword), bcrypt.DefaultCost)
+	if err != nil {
+		return err
+	}
+
+	query := `
+		UPDATE users
+		SET password_hash = $1, version = version + 1
+		WHERE id = $2
+		RETURNING id
+	`
+
+	var returnedID int64
+	err = u.DB.QueryRow(query, hashedPassword, id).Scan(&returnedID)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
