@@ -63,7 +63,7 @@ func (p PermissionModel) GetAllForUser(userID int64) (Permissions, error) {
 
 func (p PermissionModel) AddForUser(userID int64, codes ...string) error {
 	query := `
-        INSERT INTO users_permissions
+        INSERT INTO users_permissions (user_id, permission_id)
         SELECT $1, permissions.id FROM permissions 
         WHERE permissions.code = ANY($2)
        `
@@ -75,6 +75,32 @@ func (p PermissionModel) AddForUser(userID int64, codes ...string) error {
 
 	return err
 
+}
+
+// Add permissions to activated user
+func (p PermissionModel) AddActivatedPermissions(userID int64) error {
+	// Define the permissions to grant
+	permissions := []string{
+		"quotes:write",
+		"goals:read",
+		"goals:write",
+		"study_sessions:read",
+		"study_sessions:write",
+		"users:read",
+		"users:write",
+	}
+
+	query := `
+		INSERT INTO users_permissions (user_id, permission_id)
+		SELECT $1, id FROM permissions
+		WHERE code = ANY($2)
+	`
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	_, err := p.DB.ExecContext(ctx, query, userID, pq.Array(permissions))
+	return err
 }
 
 func (p PermissionModel) HasForUser(userID int64, permissionCode string) (bool, error) {

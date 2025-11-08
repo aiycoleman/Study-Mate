@@ -27,10 +27,20 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPut, "/v1/users/activated", app.activateUserHandler)
 	router.HandlerFunc(http.MethodPost, "/v1/tokens/authentication", app.createAuthenticationTokenHandler)
 
-	// router.HandlerFunc(http.MethodPatch, "/v1/users/update/:id", app.requirePermission("users:write", app.requireActivatedUser(app.updateUserHandler)))
+	router.HandlerFunc(http.MethodPatch, "/v1/users/update/:id", app.requirePermission("users:write", app.requireActivatedUser(app.updateUserHandler)))
+	router.HandlerFunc(http.MethodPatch, "/v1/users/update-password/:id", app.requirePermission("users:write", app.requireActivatedUser(app.updatePasswordHandler)))
 	// router.HandlerFunc(http.MethodGet, "/v1/users/details", app.requirePermission("users:read", app.requireActivatedUser(app.listUsersHandler)))
-	// router.HandlerFunc(http.MethodDelete, "/v1/users/delete/:id", app.requirePermission("users:write", app.requireActivatedUser(app.deleteUserHandler)))
-	// router.HandlerFunc(http.MethodPatch, "/v1/users/update-password/:id", app.requirePermission("users:write", app.requireActivatedUser(app.updatePasswordHandler)))
+	router.HandlerFunc(http.MethodDelete, "/v1/users/delete/:id", app.requirePermission("users:write", app.requireActivatedUser(app.deleteUserHandler)))
+
+	// Quotes
+	// router.HandlerFunc(http.MethodPost, "/v1/quotes", app.requirePermission("quotes:write", app.requireActivatedUser(app.createQuotesHandler)),)
+	// router.HandlerFunc(http.MethodGet, "/v1/quotes/:id", app.requirePermission("quotes:read", app.requireActivatedUser(app.displayQuotesHandler)),)
+	// router.HandlerFunc(http.MethodGet, "/v1/quotes", app.requirePermission("quotes:read", app.requireActivatedUser(app.listQuotesHandler)),)
+	// router.HandlerFunc(http.MethodPatch, "/v1/quotes/:id", app.requirePermission("quotes:write", app.requireActivatedUser(app.updateQuotesHandler)),)
+	// router.HandlerFunc(http.MethodDelete, "/v1/quotes/:id", app.requirePermission("quotes:write", app.requireActivatedUser(app.deleteQuotesHandler)),)
+
+	// Goals
+	// Study Sessions
 
 	// router.Handler(http.MethodGet, "/v1/observability/course/metrics", expvar.Handler())
 

@@ -114,7 +114,7 @@ func (u UserModel) Insert(user *User) error {
 
 	if err != nil {
 		switch {
-		case err.Error() == `pq: duplicate key value violates unique constraints "users_emial_key`:
+		case err.Error() == `pq: duplicate key value violates unique constraints "users_email_key`:
 			return ErrDuplicateEmail
 		default:
 			return err
@@ -247,16 +247,28 @@ func (u *User) IsAnonymous() bool {
 
 // Activatng the user
 func (u UserModel) Activate(user *User) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
 	query := `
         UPDATE users
         SET activated = true, version = version + 1
         WHERE id = $1 AND version = $2
         RETURNING version
     `
-	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-	defer cancel()
+	err := u.DB.QueryRowContext(ctx, query, user.ID, user.Version).Scan(&user.Version)
+	if err != nil {
+		return err
+	}
 
-	return u.DB.QueryRowContext(ctx, query, user.ID, user.Version).Scan(&user.Version)
+	p := PermissionModel{DB: u.DB}
+	err = p.AddActivatedPermissions(user.ID)
+	// Add default permissions to the user upon activation
+	if err != nil {
+		return fmt.Errorf("user activated but failed to add permissions: %w", err)
+	}
+
+	return nil
 }
 
 // GetAll retrieves all users (with optional username search and pagination).
