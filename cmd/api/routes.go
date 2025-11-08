@@ -29,7 +29,7 @@ func (app *application) routes() http.Handler {
 
 	router.HandlerFunc(http.MethodPatch, "/v1/users/update/:id", app.requirePermission("users:write", app.requireActivatedUser(app.updateUserHandler)))
 	router.HandlerFunc(http.MethodPatch, "/v1/users/update-password/:id", app.requirePermission("users:write", app.requireActivatedUser(app.updatePasswordHandler)))
-	// router.HandlerFunc(http.MethodGet, "/v1/users/details", app.requirePermission("users:read", app.requireActivatedUser(app.listUsersHandler)))
+	router.HandlerFunc(http.MethodGet, "/v1/users/accounts", app.requirePermission("users:read", app.requireActivatedUser(app.listUsersHandler)))
 	router.HandlerFunc(http.MethodDelete, "/v1/users/delete/:id", app.requirePermission("users:write", app.requireActivatedUser(app.deleteUserHandler)))
 
 	// Quotes

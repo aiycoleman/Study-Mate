@@ -25,6 +25,12 @@ type User struct {
 	CreatedAt time.Time `json:"created_at"`
 }
 
+type publicUser struct {
+	Username  string    `json:"username"`
+	Email     string    `json:"email"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type password struct {
 	plaintext *string
 	hash      []byte
@@ -272,9 +278,9 @@ func (u UserModel) Activate(user *User) error {
 }
 
 // GetAll retrieves all users (with optional username search and pagination).
-func (u UserModel) GetAll(id int64, username, email string, filters Filters) ([]*User, Metadata, error) {
+func (u UserModel) GetAll(id int64, username, email string, filters Filters) ([]*publicUser, Metadata, error) {
 	query := fmt.Sprintf(`
-        SELECT COUNT(*) OVER(), id, username, email, activated, version, created_at
+        SELECT COUNT(*) OVER(), username, email, created_at
         FROM users
         WHERE (to_tsvector('simple', username) @@ plainto_tsquery('simple', $1) OR $1 = '')
         ORDER BY %s %s, id ASC
@@ -291,17 +297,14 @@ func (u UserModel) GetAll(id int64, username, email string, filters Filters) ([]
 	defer rows.Close()
 
 	totalRecords := 0
-	users := []*User{}
+	users := []*publicUser{}
 
 	for rows.Next() {
-		var user User
+		var user publicUser
 		err := rows.Scan(
 			&totalRecords,
-			&user.ID,
 			&user.Username,
 			&user.Email,
-			&user.Activated,
-			&user.Version,
 			&user.CreatedAt,
 		)
 		if err != nil {
