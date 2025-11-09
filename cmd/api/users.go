@@ -180,7 +180,7 @@ func (app *application) listUsersHandler(w http.ResponseWriter, r *http.Request)
 
 	v := validator.New()
 	queryParametersData.Filters.Page = app.getSingleIntegerParameter(queryParameters, "page", 1, v)
-	queryParametersData.Filters.PageSize = app.getSingleIntegerParameter(queryParameters, "page_size", 20, v)
+	queryParametersData.Filters.PageSize = app.getSingleIntegerParameter(queryParameters, "page_size", 15, v)
 	queryParametersData.Filters.Sort = app.getSingleQueryParameter(queryParameters, "sort", "id")
 	queryParametersData.Filters.SortSafeList = []string{"id", "username", "email", "-id", "-username", "-email"}
 

@@ -175,3 +175,17 @@ func parseDate(dateStr string) (date time.Time) {
 	}
 	return date
 }
+
+func (app *application) getSingleInt64Parameter(values url.Values, key string, defaultValue int64) int64 {
+	s := values.Get(key)
+	if s == "" {
+		return defaultValue
+	}
+
+	v, err := strconv.ParseInt(s, 10, 64)
+	if err != nil {
+		return defaultValue
+	}
+
+	return v
+}

@@ -12,6 +12,7 @@ import (
 
 type Quote struct {
 	ID        int64     `json:"id"`
+	Username  string    `json:"username"`
 	UserID    int64     `json:"user_id"`
 	Content   string    `json:"content"`
 	CreatedAt time.Time `json:"created_at"`
@@ -132,9 +133,10 @@ func (q QuoteModel) Delete(id int64) error {
 // Get all quotes (with optional content search + pagination)
 func (q QuoteModel) GetAll(content string, filters Filters) ([]*Quote, Metadata, error) {
 	query := `
-		SELECT COUNT(*) OVER(), quote_id, user_id, content, created_at
-		FROM quotes
-		WHERE (to_tsvector('simple', content) @@ plainto_tsquery('simple', $1) OR $1 = '')
+		SELECT COUNT(*) OVER(), q.quote_id, q.user_id, u.username, q.content, q.created_at
+		FROM quotes q
+		JOIN users u ON q.user_id = u.id
+		WHERE (to_tsvector('simple', q.content) @@ plainto_tsquery('simple', $1) OR $1 = '')
 		ORDER BY ` + filters.sortColumn() + ` ` + filters.sortDirection() + `, quote_id ASC
 		LIMIT $2 OFFSET $3`
 
@@ -156,6 +158,7 @@ func (q QuoteModel) GetAll(content string, filters Filters) ([]*Quote, Metadata,
 			&totalRecords,
 			&quote.ID,
 			&quote.UserID,
+			&quote.Username,
 			&quote.Content,
 			&quote.CreatedAt,
 		)
@@ -172,4 +175,19 @@ func (q QuoteModel) GetAll(content string, filters Filters) ([]*Quote, Metadata,
 	metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
 
 	return quotes, metadata, nil
+}
+
+func (q QuoteModel) GetByID(id int64) (*Quote, error) {
+	query := `
+        SELECT q.id, q.content, q.created_at, u.username
+        FROM quotes q
+        JOIN users u ON q.user_id = u.id
+        WHERE q.id = $1
+    `
+	var quote Quote
+	err := q.DB.QueryRow(query, id).Scan(&quote.ID, &quote.Content, &quote.CreatedAt, &quote.Username)
+	if err != nil {
+		return nil, err
+	}
+	return &quote, nil
 }
