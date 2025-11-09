@@ -123,7 +123,6 @@ func (app *application) listGoalsHandler(w http.ResponseWriter, r *http.Request)
 			return
 		}
 	}
-	// Additional query parameters can be processed here
 
 	v := validator.New()
 	queryParametersData.Filters.Page = app.getSingleIntegerParameter(queryParameters, "page", 1, v)
@@ -145,8 +144,8 @@ func (app *application) listGoalsHandler(w http.ResponseWriter, r *http.Request)
 
 	// Send the goals and metadata in a JSON response
 	responseData := envelope{
-		"metadata": metadata,
-		"goals":    goals,
+		"@metadata": metadata,
+		"goals":     goals,
 	}
 	err = app.writeJSON(w, http.StatusOK, responseData, nil)
 	if err != nil {
