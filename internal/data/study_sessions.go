@@ -15,10 +15,10 @@ type StudySession struct {
 	ID          int64     `json:"id"`
 	UserID      int64     `json:"user_id"`
 	Title       string    `json:"title"`
-	Description string    `json:"description,omitempty"`
-	Subject     string    `json:"subject,omitempty"`
-	StartTime   string    `json:"start_time"`
-	EndTime     string    `json:"end_time"`
+	Description string    `json:"description"`
+	Subject     string    `json:"subject"`
+	StartTime   time.Time `json:"start_time"`
+	EndTime     time.Time `json:"end_time"`
 	IsCompleted bool      `json:"is_completed"`
 	CreatedAt   time.Time `json:"created_at"`
 }
@@ -29,8 +29,9 @@ func ValidateStudySession(v *validator.Validator, s *StudySession) {
 	v.Check(len(s.Title) <= 100, "title", "must not be more than 100 bytes long")
 	v.Check(s.UserID > 0, "user_id", "must be a valid user ID")
 
-	v.Check(s.StartTime != "", "start_time", "must be provided")
-	v.Check(s.EndTime != "", "end_time", "must be provided")
+	v.Check(!s.StartTime.IsZero(), "start_time", "must be provided")
+	v.Check(!s.EndTime.IsZero(), "end_time", "must be provided")
+	v.Check(s.EndTime.After(s.StartTime), "end_time", "must be after the start time")
 
 	// Optional fields but should not exceed length limits
 	v.Check(len(s.Description) <= 500, "description", "must not be more than 500 bytes long")

@@ -4,6 +4,7 @@ package main
 
 import (
 	// "expvar"
+	"expvar"
 	"net/http"
 
 	"github.com/julienschmidt/httprouter"
@@ -47,9 +48,14 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodDelete, "/v1/goals/:id", app.requirePermission("goals:write", app.requireActivatedUser(app.deleteGoalsHandler)))
 
 	// Study Sessions
+	router.HandlerFunc(http.MethodPost, "/v1/study-sessions", app.requirePermission("study_sessions:write", app.requireActivatedUser(app.createStudySessionHandler)))
+	// router.HandlerFunc(http.MethodGet, "/v1/study-sessions/:id", app.requirePermission("study_sessions:read", app.requireActivatedUser(app.displayStudySessionHandler)))
+	// router.HandlerFunc(http.MethodGet, "/v1/study-sessions", app.requirePermission("study_sessions:read", app.requireActivatedUser(app.listStudySessionsHandler)))
+	// router.HandlerFunc(http.MethodPatch, "/v1/study-sessions/:id", app.requirePermission("study_sessions:write", app.requireActivatedUser(app.updateStudySessionHandler)))
+	// router.HandlerFunc(http.MethodDelete, "/v1/study-sessions/:id", app.requirePermission("study_sessions:write", app.requireActivatedUser(app.deleteStudySessionHandler)))
 
-	// router.Handler(http.MethodGet, "/v1/observability/course/metrics", expvar.Handler())
+	// Metrics endpoint
+	router.Handler(http.MethodGet, "/v1/observability/course/metrics", expvar.Handler())
 
 	return app.metrics(app.recoverPanic(app.enableCORS(app.rateLimit(app.authenticate(router)))))
-	// return nil
 }

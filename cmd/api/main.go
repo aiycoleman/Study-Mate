@@ -51,16 +51,16 @@ type configuration struct {
 // Hold dependencies shared across handlers,
 // such as config and logger.
 type application struct {
-	config     configuration
-	logger     *slog.Logger
-	quoteModel data.QuoteModel
-	userModel  data.UserModel
-	// studysessionModel data.StudySessionModel
-	goalModel       data.GoalModel
-	mailer          mailer.Mailer
-	wg              sync.WaitGroup
-	tokenModel      data.TokenModel
-	permissionModel data.PermissionModel
+	config            configuration
+	logger            *slog.Logger
+	quoteModel        data.QuoteModel
+	userModel         data.UserModel
+	studysessionModel data.StudySessionModel
+	goalModel         data.GoalModel
+	mailer            mailer.Mailer
+	wg                sync.WaitGroup
+	tokenModel        data.TokenModel
+	permissionModel   data.PermissionModel
 }
 
 // loadConfig reads configuration from command line flags
@@ -186,10 +186,10 @@ func main() {
 		userModel:  data.UserModel{DB: db},
 		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port,
 			cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
-		// studysessionModel: data.StudySessionModel{DB: db},
-		goalModel:       data.GoalModel{DB: db},
-		tokenModel:      data.TokenModel{DB: db},
-		permissionModel: data.PermissionModel{DB: db},
+		studysessionModel: data.StudySessionModel{DB: db},
+		goalModel:         data.GoalModel{DB: db},
+		tokenModel:        data.TokenModel{DB: db},
+		permissionModel:   data.PermissionModel{DB: db},
 	}
 
 	// Run the application
