@@ -52,7 +52,7 @@ func (app *application) routes() http.Handler {
 	// router.HandlerFunc(http.MethodGet, "/v1/study-sessions/:id", app.requirePermission("study_sessions:read", app.requireActivatedUser(app.displayStudySessionHandler)))
 	// router.HandlerFunc(http.MethodGet, "/v1/study-sessions", app.requirePermission("study_sessions:read", app.requireActivatedUser(app.listStudySessionsHandler)))
 	// router.HandlerFunc(http.MethodPatch, "/v1/study-sessions/:id", app.requirePermission("study_sessions:write", app.requireActivatedUser(app.updateStudySessionHandler)))
-	// router.HandlerFunc(http.MethodDelete, "/v1/study-sessions/:id", app.requirePermission("study_sessions:write", app.requireActivatedUser(app.deleteStudySessionHandler)))
+	router.HandlerFunc(http.MethodDelete, "/v1/study-sessions/:id", app.requirePermission("study_sessions:write", app.requireActivatedUser(app.deleteStudySessionHandler)))
 
 	// Metrics endpoint
 	router.Handler(http.MethodGet, "/v1/observability/course/metrics", expvar.Handler())

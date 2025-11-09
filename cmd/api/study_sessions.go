@@ -69,3 +69,29 @@ func (app *application) createStudySessionHandler(w http.ResponseWriter, r *http
 		return
 	}
 }
+
+// Delete study session based on ID
+func (app *application) deleteStudySessionHandler(w http.ResponseWriter, r *http.Request) {
+	studySessionID, err := app.readIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	err = app.studysessionModel.Delete(studySessionID)
+	if err != nil {
+		switch {
+		case err == data.ErrRecordNotFound:
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "study session successfully deleted"}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+}
