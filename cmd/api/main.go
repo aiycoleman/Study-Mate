@@ -8,6 +8,7 @@ import (
 	"expvar"
 	"flag"
 	"log/slog"
+	"net/http"
 	"os"
 	"runtime"
 	"strings"
@@ -51,16 +52,16 @@ type configuration struct {
 // Hold dependencies shared across handlers,
 // such as config and logger.
 type application struct {
-	config            configuration
-	logger            *slog.Logger
+	config configuration
+	logger *slog.Logger
 	// quoteModel        data.QuoteModel
-	userModel         data.UserModel
+	userModel data.UserModel
 	// studysessionModel data.StudySessionModel
 	// goalModel         data.GoalModel
-	mailer            mailer.Mailer
-	wg                sync.WaitGroup
-	tokenModel        data.TokenModel
-	permissionModel   data.PermissionModel
+	mailer          mailer.Mailer
+	wg              sync.WaitGroup
+	tokenModel      data.TokenModel
+	permissionModel data.PermissionModel
 }
 
 // loadConfig reads configuration from command line flags
@@ -116,6 +117,7 @@ func setupLogger() *slog.Logger {
 	return logger
 }
 
+
 func openDB(settings configuration) (*sql.DB, error) {
 	// open a connection pool
 	db, err := sql.Open("postgres", settings.db.dsn)
@@ -146,6 +148,7 @@ func openDB(settings configuration) (*sql.DB, error) {
 
 func main() {
 
+	
 	// Initialize configuration
 	cfg := loadConfig()
 	// Initialize logger
@@ -178,19 +181,27 @@ func main() {
 		return time.Now().Unix()
 	}))
 
+	
 	// Initialize application struc with dependencies
 	app := &application{
-		config:     cfg,
-		logger:     logger,
+		config: cfg,
+		logger: logger,
 		// quoteModel: data.QuoteModel{DB: db},
-		userModel:  data.UserModel{DB: db},
+		userModel: data.UserModel{DB: db},
 		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port,
 			cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
 		// studysessionModel: data.StudySessionModel{DB: db},
 		// goalModel:         data.GoalModel{DB: db},
-		tokenModel:        data.TokenModel{DB: db},
-		permissionModel:   data.PermissionModel{DB: db},
+		tokenModel:      data.TokenModel{DB: db},
+		permissionModel: data.PermissionModel{DB: db},
 	}
+	mux := http.NewServeMux()
+
+    // example handler; register your actual handlers here
+    mux.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+       w.Write([]byte("ok"))
+    })
+
 
 	// Run the application
 	err = app.serve()
