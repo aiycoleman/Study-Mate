@@ -50,7 +50,7 @@ func (app *application) createQuotesHandler(w http.ResponseWriter, r *http.Reque
 	headers := make(http.Header)
 	headers.Set("Location", fmt.Sprintf("/v1/quotes/%d", quote.ID))
 
-	// Senda JSON response with 201 Created status
+	// Send a JSON response with 201 Created status
 	data := envelope{"quote": quote}
 	err = app.writeJSON(w, http.StatusCreated, data, headers)
 	if err != nil {

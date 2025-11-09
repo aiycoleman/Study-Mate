@@ -136,7 +136,7 @@ func (m GoalModel) Delete(id int64) error {
 }
 
 // Get all goals (optionally filtered by completion status or goal text)
-func (m GoalModel) GetAll(goalText string, isCompleted *bool, filters Filters) ([]*Goal, Metadata, error) {
+func (m GoalModel) GetAll(goalText string, target_date time.Time, isCompleted bool, filters Filters) ([]*Goal, Metadata, error) {
 	query := `
 		SELECT COUNT(*) OVER(), goal_id, user_id, goal_text, target_date, is_completed, created_at
 		FROM goals

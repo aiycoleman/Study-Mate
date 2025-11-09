@@ -56,7 +56,7 @@ type application struct {
 	quoteModel data.QuoteModel
 	userModel  data.UserModel
 	// studysessionModel data.StudySessionModel
-	// goalModel         data.GoalModel
+	goalModel       data.GoalModel
 	mailer          mailer.Mailer
 	wg              sync.WaitGroup
 	tokenModel      data.TokenModel
@@ -187,7 +187,7 @@ func main() {
 		mailer: mailer.New(cfg.smtp.host, cfg.smtp.port,
 			cfg.smtp.username, cfg.smtp.password, cfg.smtp.sender),
 		// studysessionModel: data.StudySessionModel{DB: db},
-		// goalModel:         data.GoalModel{DB: db},
+		goalModel:       data.GoalModel{DB: db},
 		tokenModel:      data.TokenModel{DB: db},
 		permissionModel: data.PermissionModel{DB: db},
 	}

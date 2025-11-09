@@ -40,6 +40,12 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodDelete, "/v1/quotes/:id", app.requirePermission("quotes:write", app.requireActivatedUser(app.deleteQuotesHandler)))
 
 	// Goals
+	router.HandlerFunc(http.MethodPost, "/v1/goals", app.requirePermission("goals:write", app.requireActivatedUser(app.createGoalsHandler)))
+	router.HandlerFunc(http.MethodGet, "/v1/goals/:id", app.requirePermission("goals:read", app.requireActivatedUser(app.displayGoalsHandler)))
+	router.HandlerFunc(http.MethodGet, "/v1/goals", app.requirePermission("goals:read", app.requireActivatedUser(app.listGoalsHandler)))
+	// router.HandlerFunc(http.MethodPatch, "/v1/goals/:id", app.requirePermission("goals:write", app.requireActivatedUser(app.updateGoalsHandler)))
+	// router.HandlerFunc(http.MethodDelete, "/v1/goals/:id", app.requirePermission("goals:write", app.requireActivatedUser(app.deleteGoalsHandler)))
+
 	// Study Sessions
 
 	// router.Handler(http.MethodGet, "/v1/observability/course/metrics", expvar.Handler())
