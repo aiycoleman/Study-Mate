@@ -179,13 +179,14 @@ func (q QuoteModel) GetAll(content string, filters Filters) ([]*Quote, Metadata,
 
 func (q QuoteModel) GetByID(id int64) (*Quote, error) {
 	query := `
-        SELECT q.id, q.content, q.created_at, u.username
-        FROM quotes q
-        JOIN users u ON q.user_id = u.id
-        WHERE q.id = $1
+        SELECT q.quote_id, q.content, q.created_at, u.username 
+		FROM quotes q 
+		JOIN users u 
+		ON q.user_id = u.id 
+		WHERE q.quote_id = $1
     `
 	var quote Quote
-	err := q.DB.QueryRow(query, id).Scan(&quote.ID, &quote.Content, &quote.CreatedAt, &quote.Username)
+	err := q.DB.QueryRow(query, id).Scan(&quote.ID, &quote.UserID, &quote.Username, &quote.Content, &quote.CreatedAt)
 	if err != nil {
 		return nil, err
 	}

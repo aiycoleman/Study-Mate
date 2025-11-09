@@ -36,8 +36,8 @@ func (app *application) routes() http.Handler {
 	router.HandlerFunc(http.MethodPost, "/v1/quotes", app.requirePermission("quotes:write", app.requireActivatedUser(app.createQuotesHandler)))
 	router.HandlerFunc(http.MethodGet, "/v1/quotes/:id", app.requirePermission("quotes:read", app.requireActivatedUser(app.displayQuotesHandler)))
 	router.HandlerFunc(http.MethodGet, "/v1/quotes", app.requirePermission("quotes:read", app.requireActivatedUser(app.listQuotesHandler)))
-	// router.HandlerFunc(http.MethodPatch, "/v1/quotes/:id", app.requirePermission("quotes:write", app.requireActivatedUser(app.updateQuotesHandler)),)
-	// router.HandlerFunc(http.MethodDelete, "/v1/quotes/:id", app.requirePermission("quotes:write", app.requireActivatedUser(app.deleteQuotesHandler)),)
+	router.HandlerFunc(http.MethodPatch, "/v1/quotes/:id", app.requirePermission("quotes:write", app.requireActivatedUser(app.updateQuotesHandler)))
+	router.HandlerFunc(http.MethodDelete, "/v1/quotes/:id", app.requirePermission("quotes:write", app.requireActivatedUser(app.deleteQuotesHandler)))
 
 	// Goals
 	// Study Sessions
