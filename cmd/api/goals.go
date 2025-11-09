@@ -154,3 +154,101 @@ func (app *application) listGoalsHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 }
+
+// Update goal based on ID
+func (app *application) updateGoalsHandler(w http.ResponseWriter, r *http.Request) {
+	// get the goal id from the url
+	id, err := app.readIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	// get the existing goal from the database
+	goal, err := app.goalModel.Get(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	// decode the incoming json data
+	var incomingData struct {
+		GoalText    *string    `json:"goal_text"`
+		TargetDate  *time.Time `json:"target_date"`
+		IsCompleted *bool      `json:"is_completed"`
+	}
+
+	err = app.readJSON(w, r, &incomingData)
+	if err != nil {
+		app.badRequestResponse(w, r, err)
+		return
+	}
+
+	// update the goal fields if provided
+	if incomingData.GoalText != nil {
+		goal.GoalText = *incomingData.GoalText
+	}
+	if incomingData.TargetDate != nil {
+		goal.TargetDate = *incomingData.TargetDate
+	}
+	if incomingData.IsCompleted != nil {
+		goal.IsCompleted = *incomingData.IsCompleted
+	}
+
+	// validate the updated goal data
+	v := validator.New()
+	data.ValidateGoal(v, goal)
+	if !v.Valid() {
+		app.failedValidationResponse(w, r, v.Errors)
+		return
+	}
+
+	// update the goal in the database
+	err = app.goalModel.Update(goal)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+
+	// send the updated goal as json response
+	data := envelope{"goal": goal}
+	err = app.writeJSON(w, http.StatusOK, data, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+}
+
+// Delete goal based on ID
+func (app *application) deleteGoalsHandler(w http.ResponseWriter, r *http.Request) {
+	// get id from the url
+	id, err := app.readIDParam(r)
+	if err != nil {
+		app.notFoundResponse(w, r)
+		return
+	}
+
+	// delete the goal from the database
+	err = app.goalModel.Delete(id)
+	if err != nil {
+		switch {
+		case errors.Is(err, data.ErrRecordNotFound):
+			app.notFoundResponse(w, r)
+		default:
+			app.serverErrorResponse(w, r, err)
+		}
+		return
+	}
+
+	// send a 200 OK response
+	err = app.writeJSON(w, http.StatusOK, envelope{"message": "goal successfully deleted"}, nil)
+	if err != nil {
+		app.serverErrorResponse(w, r, err)
+		return
+	}
+}
