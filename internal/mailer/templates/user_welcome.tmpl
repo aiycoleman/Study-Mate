@@ -1,12 +1,12 @@
 // Filename: internal/mailer/templates/user_welcome.tmpl
 
 
-{{define "subject"}}Welcome to the Training Database!{{end}}
+{{define "subject"}}Welcome to Study Mate!{{end}}
 
 {{define "plainBody"}}
 Hi,
 
-Thanks for signing up for National Inservice account. We're excited to have you on board!
+Thanks for signing up for Study Mate. We're excited to have you on board!
 
 For future reference, your user ID number is {{.userID}}.
 
@@ -19,7 +19,7 @@ Please note that this is a one-time use token and it will expire in 3 days.
 
 Thanks,
 
-The National Inservice Team
+The Study Team
 {{end}}
 
 {{define "htmlBody"}}
@@ -33,7 +33,7 @@ The National Inservice Team
 
 <body>
     <p>Hi,</p>
-    <p>Thanks for signing up for a National Inservice account. We're excited 
+    <p>Thanks for signing up for a Study Mate account. We're excited 
        to have you on board!</p>
     <p>For future reference, your user ID number is {{.userID}}.</p>
 
@@ -45,7 +45,7 @@ The National Inservice Team
     <p>Please note that this is a one-time use token and it will 
        expire in 3 days.</p>
     <p>Thanks,</p>
-    <p>The National Inservice Team</p>
+    <p>The Study Mate Team</p>
 </body>
 
 </html>
