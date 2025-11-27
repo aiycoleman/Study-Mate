@@ -88,18 +88,28 @@ func (app *application) displayQuotesHandler(w http.ResponseWriter, r *http.Requ
 	}
 }
 
-// Listing all quotes (with pagination)
+// Listing all quotes (with pagination) - filtered by logged-in user OR all quotes for random feature
 func (app *application) listQuotesHandler(w http.ResponseWriter, r *http.Request) {
-	var queryParametersData struct {
-		Content string
-		data.Filters
-	}
+    // Get the logged-in user from context
+    user := app.contextGetUser(r)
+    if user.IsAnonymous() {
+       app.authenticationRequiredResponse(w, r)
+       return
+    }
+
+    var queryParametersData struct {
+       Content string
+       ShowAll bool // if true, show all quotes (for random quote feature)
+       data.Filters
+    }
 
 	// get the query parameters from the url
 	queryParameters := r.URL.Query()
 
 	// load the query parameters into the struct
 	queryParametersData.Content = app.getSingleQueryParameter(queryParameters, "content", "")
+	// Check if we should show all quotes (for random quote feature on homepage)
+	queryParametersData.ShowAll = app.getSingleQueryParameter(queryParameters, "show_all", "") == "true"
 
 	v := validator.New()
 	queryParametersData.Filters.Page = app.getSingleIntegerParameter(queryParameters, "page", 1, v)
@@ -114,8 +124,17 @@ func (app *application) listQuotesHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	// get the list of courses from the database
-	quotes, metadata, err := app.quoteModel.GetAll(queryParametersData.Content, queryParametersData.Filters)
+	var quotes []*data.Quote
+	var metadata data.Metadata
+	var err error
+
+	// If show_all is true, get all quotes; otherwise filter by user
+	if queryParametersData.ShowAll {
+    	quotes, metadata, err = app.quoteModel.GetAll(queryParametersData.Content, queryParametersData.Filters)
+	} else {
+    	quotes, metadata, err = app.quoteModel.GetAllForUser(user.ID, queryParametersData.Content, queryParametersData.Filters)
+	}
+
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return

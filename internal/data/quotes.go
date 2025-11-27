@@ -130,6 +130,54 @@ func (q QuoteModel) Delete(id int64) error {
 	return nil
 }
 
+// GetAllForUser quotes for a specific user
+func (q QuoteModel) GetAllForUser(userID int64, content string, filters Filters) ([]*Quote, Metadata, error) {
+    query := `
+       SELECT COUNT(*) OVER(), q.quote_id, q.user_id, u.username, q.content, q.created_at
+       FROM quotes q
+       JOIN users u ON q.user_id = u.id
+       WHERE q.user_id = $1
+       AND (to_tsvector('simple', q.content) @@ plainto_tsquery('simple', $2) OR $2 = '')
+       ORDER BY  + filters.sortColumn() +   + filters.sortDirection() + , quote_id ASC
+       LIMIT $3 OFFSET $4`
+
+    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+    defer cancel()
+
+    rows, err := q.DB.QueryContext(ctx, query, userID, content, filters.limit(), filters.offset())
+    if err != nil {
+       return nil, Metadata{}, err
+    }
+    defer rows.Close()
+
+    totalRecords := 0
+    var quotes []*Quote
+
+    for rows.Next() {
+       var quote Quote
+       err := rows.Scan(
+          &totalRecords,
+          &quote.ID,
+          &quote.UserID,
+          &quote.Username,
+          &quote.Content,
+          &quote.CreatedAt,
+       )
+       if err != nil {
+          return nil, Metadata{}, err
+       }
+       quotes = append(quotes, &quote)
+    }
+
+    if err = rows.Err(); err != nil {
+       return nil, Metadata{}, err
+    }
+
+    metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+
+    return quotes, metadata, nil
+}
+
 // Get all quotes (with optional content search + pagination)
 func (q QuoteModel) GetAll(content string, filters Filters) ([]*Quote, Metadata, error) {
 	query := `
