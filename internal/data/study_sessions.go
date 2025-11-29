@@ -153,6 +153,58 @@ func (m StudySessionModel) Delete(id int64) error {
 	return nil
 }
 
+// GetAllForUser study sessions for a specific user
+func (m StudySessionModel) GetAllForUser(userID int64, title string, subject string, isCompleted *bool, filters Filters) ([]*StudySession, Metadata, error) {
+    query := `
+       SELECT COUNT(*) OVER(), session_id, user_id, title, description, subject, start_time, end_time, is_completed, created_at
+       FROM study_sessions
+       WHERE user_id = $1
+       AND (to_tsvector('simple', title) @@ plainto_tsquery('simple', $2) OR $2 = '')
+       AND (to_tsvector('simple', subject) @@ plainto_tsquery('simple', $3) OR $3 = '')
+       AND ($4::boolean IS NULL OR is_completed = $4)
+       ORDER BY  + filters.sortColumn() +   + filters.sortDirection() + , session_id ASC
+       LIMIT $5 OFFSET $6`
+
+    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+    defer cancel()
+
+    rows, err := m.DB.QueryContext(ctx, query, userID, title, subject, isCompleted, filters.limit(), filters.offset())
+    if err != nil {
+       return nil, Metadata{}, err
+    }
+    defer rows.Close()
+
+    totalRecords := 0
+    var sessions []*StudySession
+
+    for rows.Next() {
+       var s StudySession
+       err := rows.Scan(
+          &totalRecords,
+          &s.ID,
+          &s.UserID,
+          &s.Title,
+          &s.Description,
+          &s.Subject,
+          &s.StartTime,
+          &s.EndTime,
+          &s.IsCompleted,
+          &s.CreatedAt,
+       )
+       if err != nil {
+          return nil, Metadata{}, err
+       }
+       sessions = append(sessions, &s)
+    }
+
+    if err = rows.Err(); err != nil {
+       return nil, Metadata{}, err
+    }
+
+    metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+    return sessions, metadata, nil
+}
+
 // GetAll study sessions with optional filters (by subject/title/is_completed)
 func (m StudySessionModel) GetAll(title string, subject string, isCompleted *bool, filters Filters) ([]*StudySession, Metadata, error) {
 	query := `

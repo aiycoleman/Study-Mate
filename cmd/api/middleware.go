@@ -43,32 +43,50 @@ func (a *application) recoverPanic(next http.Handler) http.Handler {
 
 // add CORS headers to the response
 func (app *application) enableCORS(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 
-		w.Header().Add("Vary", "Origin")
-		// The request method can vary so don't rely on cache
-		w.Header().Add("Vary", "Access-Control-Request-Method")
-		// Check if the request origin is in the trusted list
-		origin := r.Header.Get("Origin")
+       w.Header().Add("Vary", "Origin")
+       // The request method can vary so don't rely on cache
+       w.Header().Add("Vary", "Access-Control-Request-Method")
+       
+       // Check if the request origin is in the trusted list
+       origin := r.Header.Get("Origin")
 
-		if origin != "" {
-			for i := range app.config.cors.trustedOrigins {
-				if origin == app.config.cors.trustedOrigins[i] {
-					w.Header().Set("Access-Control-Allow-Origin", origin)
-					// Check if its a preflight CORS request
-					if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-method") != "" {
-						w.Header().Set("Access-Control-Allow-Methods", "OPTIONS, PUT, PATCH, DELETE")
-						w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
-						w.WriteHeader(http.StatusOK)
-						return
-					}
-					break
-				}
-			}
-		}
+       // For development, be more permissive with CORS
+       if app.config.env == "development" {
+          // Allow all origins in development
+          w.Header().Set("Access-Control-Allow-Origin", "*")
+          w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+          w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept")
+          w.Header().Set("Access-Control-Max-Age", "3600")
+          
+          // Handle preflight requests
+          if r.Method == http.MethodOptions {
+             w.WriteHeader(http.StatusOK)
+             return
+          }
+       } else {
+          // Production CORS logic
+          if origin != "" {
+             for i := range app.config.cors.trustedOrigins {
+                if origin == app.config.cors.trustedOrigins[i] {
+                   w.Header().Set("Access-Control-Allow-Origin", origin)
+                   w.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS")
+                   w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type, Accept")
+                   
+                   // Check if it's a preflight CORS request
+                   if r.Method == http.MethodOptions && r.Header.Get("Access-Control-Request-Method") != "" {
+                      w.WriteHeader(http.StatusOK)
+                      return
+                   }
+                   break
+                }
+             }
+          }
+       }
 
-		next.ServeHTTP(w, r)
-	})
+       next.ServeHTTP(w, r)
+    })
 }
 
 func (app *application) rateLimit(next http.Handler) http.Handler {

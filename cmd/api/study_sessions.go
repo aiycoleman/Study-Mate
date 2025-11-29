@@ -100,8 +100,15 @@ func (app *application) displayStudySessionHandler(w http.ResponseWriter, r *htt
 	}
 }
 
-// Listing all study sessions (with pagination)
+// Listing all study sessions (with pagination) - filtered by logged-in user
 func (app *application) listStudySessionsHandler(w http.ResponseWriter, r *http.Request) {
+    // Get the logged-in user from context
+	user := app.contextGetUser(r)
+	if user.IsAnonymous() {
+    	app.authenticationRequiredResponse(w, r)
+    	return
+	}
+	
 	var queryParametersData struct {
 		Title       string
 		Description string
@@ -136,8 +143,8 @@ func (app *application) listStudySessionsHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	// Get the study sessions from the database
-	studySessions, metadata, err := app.studysessionModel.GetAll(queryParametersData.Title, queryParametersData.Subject, queryParametersData.IsCompleted, queryParametersData.Filters)
+	// Get the study sessions from the database - FILTER BY USER ID
+	studySessions, metadata, err := app.studysessionModel.GetAllForUser(user.ID, queryParametersData.Title, queryParametersData.Subject, queryParametersData.IsCompleted, queryParametersData.Filters)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return

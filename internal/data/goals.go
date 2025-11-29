@@ -134,6 +134,55 @@ func (m GoalModel) Delete(id int64) error {
 
 	return nil
 }
+// Get all goals for a specific user (filtered by user_id)
+func (m GoalModel) GetAllForUser(userID int64, goalText string, target_date time.Time, isCompleted bool, filters Filters) ([]*Goal, Metadata, error) {
+    query := `
+       SELECT COUNT(*) OVER(), goal_id, user_id, goal_text, target_date, is_completed, created_at
+       FROM goals
+       WHERE user_id = $1
+       AND (to_tsvector('simple', goal_text) @@ plainto_tsquery('simple', $2) OR $2 = '')
+       ORDER BY  + filters.sortColumn() +   + filters.sortDirection() + , goal_id ASC
+       LIMIT $3 OFFSET $4`
+
+    ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+    defer cancel()
+
+    rows, err := m.DB.QueryContext(ctx, query, userID, goalText, filters.limit(), filters.offset())
+    if err != nil {
+       return nil, Metadata{}, err
+    }
+    defer rows.Close()
+
+    totalRecords := 0
+    var goals []*Goal
+
+    for rows.Next() {
+       var goal Goal
+       err := rows.Scan(
+          &totalRecords,
+          &goal.ID,
+          &goal.UserID,
+          &goal.GoalText,
+          &goal.TargetDate,
+          &goal.IsCompleted,
+          &goal.CreatedAt,
+       )
+       if err != nil {
+          return nil, Metadata{}, err
+       }
+       goals = append(goals, &goal)
+    }
+
+    if err = rows.Err(); err != nil {
+       return nil, Metadata{}, err
+    }
+
+    metadata := calculateMetadata(totalRecords, filters.Page, filters.PageSize)
+    return goals, metadata, nil
+}
+
+
+
 
 // Get all goals (optionally filtered by completion status or goal text)
 func (m GoalModel) GetAll(goalText string, target_date time.Time, isCompleted bool, filters Filters) ([]*Goal, Metadata, error) {
